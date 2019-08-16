@@ -16,7 +16,8 @@ from tensorflow.python.keras import losses
 from tensorflow.python.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, CSVLogger
 from tensorflow.python.keras import Input
 from tensorflow.python.keras import Model
-from tensorflow.python.keras.optimizers import Adam, SGD
+from tensorflow.python.keras.optimizer_v2.adam import Adam
+from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
 from tensorflow.python.keras.regularizers import l2
 from sacred import Experiment
 from sacred.commands import print_config
@@ -238,7 +239,7 @@ def build_model(fragment_length, nb_filters, nb_output_bins, dilation_depth, nb_
                                      kernel_regularizer=l2(res_l2))(x)
         skip_x = layers.Convolution1D(nb_filters, 1, padding='same', use_bias=use_bias,
                                       kernel_regularizer=l2(res_l2))(x)
-        res_x = layers.Add()([original_x, res_x])
+        res_x = layers.add([original_x, res_x])
         return res_x, skip_x
 
     input = Input(shape=(fragment_length, nb_output_bins), name='input_part')
@@ -256,7 +257,7 @@ def build_model(fragment_length, nb_filters, nb_output_bins, dilation_depth, nb_
             skip_connections.append(skip_out)
 
     if use_skip_connections:
-        out = layers.Add()(skip_connections)
+        out = layers.add(skip_connections)
     out = layers.Activation('relu')(out)
     out = layers.Convolution1D(nb_output_bins, 1, padding='same',
                                kernel_regularizer=l2(final_l2))(out)
@@ -291,7 +292,7 @@ def compute_receptive_field_(desired_sample_rate, dilation_depth, nb_stacks):
 @ex.capture(prefix='optimizer')
 def make_optimizer(optimizer, lr, momentum, decay, nesterov, epsilon):
     if optimizer == 'sgd':
-        optim = SGD(lr, momentum, decay, nesterov)
+        optim = SGD(learning_rate=lr, momentum=momentum, decay=decay, nesterov=nesterov)
     elif optimizer == 'adam':
         optim = Adam(lr=lr, decay=decay, epsilon=epsilon)
     else:
@@ -314,7 +315,7 @@ def predict(desired_sample_rate, fragment_length, _log, seed, _seed, _config, pr
 
     sample_dir = os.path.join(run_dir, 'samples')
     if not os.path.exists(sample_dir):
-        os.mkdir(sample_dir)
+        os.makedirs(sample_dir, exist_ok=True)
 
     sample_name = make_sample_name(epoch)
     sample_filename = os.path.join(sample_dir, sample_name)
@@ -426,7 +427,7 @@ def test_make_soft(_log, train_with_soft_target_stdev, _config):
 def test_preprocess(desired_sample_rate, batch_size, use_ulaw):
     sample_dir = os.path.join('preprocess_test')
     if not os.path.exists(sample_dir):
-        os.mkdir(sample_dir)
+        os.makedirs(sample_dir, exist_ok=True)
 
     ulaw_str = '_ulaw' if use_ulaw else ''
     sample_filename = os.path.join(sample_dir, 'test1%s.wav' % ulaw_str)
@@ -472,7 +473,7 @@ def main(run_dir, data_dir, nb_epoch, early_stopping_patience, desired_sample_ra
          train_only_in_receptive_field, _run, use_ulaw, train_with_soft_target_stdev):
     if run_dir is None:
         if not os.path.exists("models"):
-            os.mkdir("models")
+            os.makedirs("models", exist_ok=True)
         run_dir = os.path.join('models', datetime.datetime.now().strftime('run_%Y%m%d_%H%M%S'))
         _config['run_dir'] = run_dir
 
@@ -483,7 +484,7 @@ def main(run_dir, data_dir, nb_epoch, early_stopping_patience, desired_sample_ra
     if not debug:
         if os.path.exists(run_dir):
             raise EnvironmentError('Run with seed %d already exists' % seed)
-        os.mkdir(run_dir)
+        os.makedirs(run_dir, exist_ok=True)
         checkpoint_dir = os.path.join(run_dir, 'checkpoints')
         json.dump(_config, open(os.path.join(run_dir, 'config.json'), 'w'))
 
@@ -513,8 +514,8 @@ def main(run_dir, data_dir, nb_epoch, early_stopping_patience, desired_sample_ra
 
     tictoc = strftime("%a_%d_%b_%Y_%H_%M_%S", gmtime())
     directory_name = tictoc
-    log_dir = 'wavenet_' + directory_name
-    os.mkdir(log_dir)
+    log_dir = 'tensorboard\\wavenet_' + directory_name
+    os.makedirs(log_dir, exist_ok=True)
     tensorboard = TensorBoard(log_dir=log_dir)
 
     callbacks = [
@@ -523,14 +524,12 @@ def main(run_dir, data_dir, nb_epoch, early_stopping_patience, desired_sample_ra
         EarlyStopping(patience=early_stopping_patience, verbose=1),
     ]
     if not debug:
+        os.makedirs(checkpoint_dir, exist_ok=True)
         callbacks.extend([
             ModelCheckpoint(os.path.join(checkpoint_dir, 'checkpoint.{epoch:05d}-{val_loss:.3f}.hdf5'),
                             save_best_only=True),
             CSVLogger(os.path.join(run_dir, 'history.csv')),
         ])
-
-    if not debug:
-        os.mkdir(checkpoint_dir)
         _log.info('Starting Training...')
 
     print("nb_examples['train'] {0}".format(nb_examples['train']))

@@ -4,3 +4,6 @@
 *.pyc
 VCTK-Corpus/
 *.tar.gz
+tensorboard/
+models/
+*.npy
