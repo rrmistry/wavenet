@@ -1,3 +1,6 @@
 *.wav
+*.json
 .idea
 *.pyc
+VCTK-Corpus/
+*.tar.gz

@@ -6,23 +6,23 @@ import os
 import re
 import wave
 
-import keras.backend as K
+import tensorflow.keras.backend as K
 import numpy as np
 import scipy.io.wavfile
 import scipy.signal
-from keras import layers
-from keras import metrics
-from keras import objectives
-from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, CSVLogger
-from keras.engine import Input
-from keras.engine import Model
-from keras.optimizers import Adam, SGD
-from keras.regularizers import l2
+from tensorflow.python.keras import layers
+from tensorflow.python.keras import metrics
+from tensorflow.python.keras import losses
+from tensorflow.python.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, CSVLogger
+from tensorflow.python.keras import Input
+from tensorflow.python.keras import Model
+from tensorflow.python.keras.optimizers import Adam, SGD
+from tensorflow.python.keras.regularizers import l2
 from sacred import Experiment
 from sacred.commands import print_config
 from tqdm import tqdm
 from time import gmtime, strftime
-from keras.callbacks import TensorBoard
+from tensorflow.python.keras.callbacks import TensorBoard
 
 import dataset
 from wavenet_utils import CausalAtrousConvolution1D, categorical_mean_squared_error
@@ -497,7 +497,7 @@ def main(run_dir, data_dir, nb_epoch, early_stopping_patience, desired_sample_ra
     optim = make_optimizer()
     _log.info('Compiling Model...')
 
-    loss = objectives.categorical_crossentropy
+    loss = losses.categorical_crossentropy
     all_metrics = [
         metrics.categorical_accuracy,
         categorical_mean_squared_error

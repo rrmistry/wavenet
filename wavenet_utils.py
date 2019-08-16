@@ -1,6 +1,6 @@
-import keras.backend as K
-from keras.layers.convolutional import Conv1D
-from keras.utils.conv_utils import conv_output_length
+import tensorflow.keras.backend as K
+from tensorflow.python.keras.layers.convolutional import Conv1D
+from tensorflow.python.keras.utils.conv_utils import conv_output_length
 import tensorflow as tf
 
 

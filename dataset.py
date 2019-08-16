@@ -113,7 +113,7 @@ def load_set(desired_sample_rate, set_dirname, use_ulaw):
     ulaw_str = '_ulaw' if use_ulaw else ''
     cache_fn = os.path.join(set_dirname, 'processed_%d%s.npy' % (desired_sample_rate, ulaw_str))
     if os.path.isfile(cache_fn):
-        full_sequences = np.load(cache_fn)
+        full_sequences = np.load(cache_fn, allow_pickle=True)
     else:
         file_names = [fn for fn in os.listdir(set_dirname) if fn.endswith('.wav')]
         full_sequences = []
